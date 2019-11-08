@@ -1,5 +1,6 @@
 from Dataset import TGS_Dataset
-from Models import UNetResNet34, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE, UNetResNet34_SE_Hyper_SPP, UNetResNet50_SE, FPNetResNet34, RefineNetResNet34
+from Models import UNetResNet34_SE_Hyper_FPA, UNetResNet34_PAN_Hyper_attention
+# UNetResNet34, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE, UNetResNet34_SE_Hyper_SPP, UNetResNet50_SE, FPNetResNet34, RefineNetResNet34
 from contextlib import contextmanager
 import time
 import os
@@ -19,11 +20,11 @@ LOAD_PATHS = None
 DEBUG = False
 ##############################
 LOSS = 'lovasz'
-OPTIMIZER = 'SGD'
+OPTIMIZER = 'SGD'    # Stochastic Gradient Descent, 随机梯度下降
 PRETRAINED = True
 N_EPOCH = 150
-BATCH_SIZE = 16  #32
-NET = UNetResNet34_SE_Hyper_SPP
+BATCH_SIZE = 32  #32
+NET = UNetResNet34_PAN_Hyper_attention    # UNetResNet34_SE_Hyper_SPP
 ACTIVATION = 'relu'
 ###########OPTIMIZER###########
 LR = 1e-2

@@ -136,13 +136,18 @@ class TorchDataset(Dataset):
 
 class TGS_Dataset():
 
-    def __init__(self, folder_path):
+    def __init__(self, folder_path):    # folder_path：Train_path
         self.folder_path = folder_path
         self.df = self.create_dataset_df(self.folder_path)
+        #################深度z值归一化######################
         self.df['z'] = normalize(self.df['z'].values)
+        #################统计全是0和全是盐的数量################
         try:
             empty = np.array([np.sum(m) for m in self.df.masks])
-            print('{} empty masks out of {} total masks'.format(np.sum(empty == 0), len(empty)))
+            empty_num = np.sum(empty == 0)
+            full_num = np.sum(empty > (101 * 101 * 0.98))
+            print('{} empty and full masks out of {} total masks'.format(empty_num + full_num, len(empty)))
+            # print('{} empty masks out of {} total masks'.format(np.sum(empty == 0), len(empty)))
         except AttributeError:
             pass
 
@@ -161,28 +166,37 @@ class TGS_Dataset():
     def create_dataset_df(folder_path, load=True):
         '''Create a dataset for a specific dataset folder path'''
         # Walk and get paths
+        ##############读取id到df中#####################
         walk = os.walk(folder_path)
-        main_dir_path, subdirs_path, csv_path = next(walk)
-        dir_im_path, _, im_path = next(walk)
+        main_dir_path, subdirs_path, csv_path = next(walk)    # subdirs_path: ['images', 'masks'], csv_path: ['depths.csv', 'train.csv']
+        dir_im_path, _, im_path = next(walk)    # im_path: train中的图片
         # Create dataframe
         df = pd.DataFrame()
-        df['id'] = [im_p.split('.')[0] for im_p in im_path]
-        df['im_path'] = [os.path.join(dir_im_path, im_p) for im_p in im_path]
+        df['id'] = [im_p.split('.')[0] for im_p in im_path]    # 通过im_path把图片的id读入到df中
+        df['im_path'] = [os.path.join(dir_im_path, im_p) for im_p in im_path]    # 图片的路径
+
+        ##################读取masks到df中#########################
         if any(['mask' in sub for sub in subdirs_path]):
             data = 'train'
             dir_mask_path, _, mask_path = next(walk)
             df['mask_path'] = [os.path.join(dir_mask_path, m_p)
-                               for m_p in mask_path]
-            rle_df = pd.read_csv(os.path.join(main_dir_path, csv_path[1]))
-            df = df.merge(rle_df, on='id', how='left')
+                               for m_p in mask_path]    # 把id对应的masks加入到df中
+
+            ####################读取rle到df中#########################
+            rle_df = pd.read_csv(os.path.join(main_dir_path, csv_path[1]))    # 读取train.csv文件rle_df
+            df = df.merge(rle_df, on='id', how='left')    # 通过id号将df和rle_df两个合并在一起
         else:
             data = 'test'
 
+        ##################读取depth到df中#################
         depth_df = pd.read_csv(os.path.join(main_dir_path, csv_path[0]))
         df = df.merge(depth_df, on='id', how='left')
 
+        ################把images和masks进行归一化后加入到df中###############
         if load:
             df = TGS_Dataset.load_images(df, data=data)
+
+        # df的标签：id, im_path, mask_path, rle_mask, images, masks
         return df
 
     def yield_dataloader(self, data='train', nfold=5,
@@ -190,27 +204,41 @@ class TGS_Dataset():
                          num_workers=8, batch_size=10, auxiliary_df=None):
 
         if data == 'train':
+            ########################################################
+            # 随机划分：原理：首先对样本全体随机打乱，然后再划分出train/test对。由迭代器产生指定数量的独立的数据集划分。是k折交叉验证比较好的替代
+            # ShuffleSplit, GroupShuffleSplit, StratifiedShuffleSplit
+            # k折交叉验证：原理：假设数据集为D，将D分为k个不相交的子集。如果D中有m个样本，那么每个子集中都有m/k个样本，每个子集都尽可能保持数据分布的一致性。每次使用
+            # k-1个子集作为训练数据，用1个子集作为测试数据，训练k次。最终的结果是这k次测试结果的均值。
+            # KFold, GroupKFold, StratifiedKFold
+            #########################################################
             if stratify:
                 self.df["coverage"] = self.df.masks.map(np.sum) / pow(IM_SIZE, 2)
                 self.df["coverage_class"] = self.df.coverage.map(cov_to_class)
                 #self.df["coverage_class"] = self.df.masks.map(get_mask_type)
-                kf = StratifiedKFold(n_splits=nfold,
-                                     shuffle=True,
-                                     random_state=seed)
+                kf = StratifiedKFold(n_splits=nfold, shuffle=True, random_state=seed)   # n_folds : 整数，交叉验证的份数，默认为3，最小值为2
+                                                                                        # shuffle : True或者False.数据是否被打乱
+                                                                                        # random_state :默认None，当 shuffle为True的时候使用。如果是int，
+                                                                                        # 表示随机数生成器使用的种子，为None时，是np.random随机使用的 实例。
             else:
                 kf = KFold(n_splits=nfold,
                            shuffle=True,
                            random_state=seed)
+
+
             loaders = []
             idx = []
-            for train_ids, val_ids in kf.split(self.df['id'].values, self.df.coverage_class):
+            for train_ids, val_ids in kf.split(self.df['id'].values, self.df.coverage_class):    # 循环5次，应该是nfold
                 if auxiliary_df is not None:
                     train_df = self.df.iloc[train_ids].append(auxiliary_df)
                 else:
                     train_df = self.df.iloc[train_ids]
 
-                train_dataset = TorchDataset(train_df,
-                                             transform=basic_augment)
+                train_dataset = TorchDataset(train_df, transform=basic_augment)
+                # DataLoader: dataset (Dataset): dataset from which to load the data;
+                # shuffle (bool, optional): set to ``True`` to have the data reshuffled at every epoch (default: False).
+                # batch_size (int, optional): how many samples per batch to load (default: 1).
+                # num_workers (int, optional): how many subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: 0)
+                # pin_memory (bool, optional): If ``True``, the data loader will copy tensors into CUDA pinned memory before returning them.
                 train_loader = DataLoader(train_dataset,
                                           shuffle=shuffle,
                                           num_workers=num_workers,
@@ -223,6 +251,7 @@ class TGS_Dataset():
                                         num_workers=num_workers,
                                         batch_size=batch_size,
                                         pin_memory=True)
+                ###############把5个fold的id和数据分别放在各个列表#####################
                 idx.append((self.df.id.iloc[train_ids], self.df.id.iloc[val_ids]))
                 loaders.append((train_loader, val_loader))
             return loaders, idx

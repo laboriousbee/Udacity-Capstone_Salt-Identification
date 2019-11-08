@@ -1121,7 +1121,7 @@ class UNetResNet34_SE_Hyper_FPA(SegmentationNetwork):
     # PyTorch U-Net model using ResNet(34, 50 , 101 or 152) encoder.
 
     def __init__(self, pretrained=True, activation='relu', **kwargs):
-        super(UNetResNet34_SE_Hyper_FPA, self).__init__(**kwargs)
+        super(UNetResNet34_SE_Hyper_FPA, self).__init__(**kwargs)    #uper类的作用是继承的时候，调用含super的各个的基类__init__函数，如果不使用super，就不会调用这些类的__init__函数，除非显式声明。而且使用super可以避免基类被重复调用。
         if activation == 'relu':
             self.activation = nn.ReLU(inplace=True)
         elif activation == 'elu':
@@ -1230,7 +1230,7 @@ class UNetResNet34_PAN_Hyper(SegmentationNetwork):
         self.reducer = ConvBn2d(512, 64, kernel_size=1, padding=0)
 
         # self.fpa = FPAModule(in_ch=512, out_ch=64)
-        self.sfpa = SFPAModule(in_ch=512, out_ch=64)
+        self.sfpa = sFPAModule(in_ch=512, out_ch=64)
 
         self.logit = nn.Sequential(
             ConvBn2d(64 * 5, 128, kernel_size=3, padding=1),

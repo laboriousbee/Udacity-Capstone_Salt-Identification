@@ -7,8 +7,11 @@ import numpy as np
 from tqdm import tqdm
 from Dataset import TGS_Dataset
 from Evaluation import do_length_decode, do_length_encode
-from Models import UNetResNet34_SE, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE_Hyper_SPP
+from Models import UNetResNet34_SE, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE_Hyper_SPP, UNetResNet34_PAN_Hyper_attention
 from Augmentation import do_horizontal_flip
+
+NET = UNetResNet34_PAN_Hyper_attention    # UNetResNet34_SE_Hyper_SPP
+
 
 # UNTESTED, NEED TO COMPARE WITH NATIVE MEAN
 def average_fold_predictions(path_list, H=101, W=101, fill_value=255, threshold=0.5):
@@ -78,21 +81,21 @@ def tta_transform(images, mode):
 if __name__ == '__main__':
     TEST_PATH = './Data/Test'
     DEBUG = False
-    net = UNetResNet34_SE_Hyper_SPP(debug=DEBUG)
+    net = UNetResNet34_PAN_Hyper_attention(debug=DEBUG)
     NET_NAME = type(net).__name__
     THRESHOLD = 0.45
     MIN_SIZE = 0
     BATCH_SIZE = 32
 
     LOAD_PATHS = [
-        './Saves/UNetResNet34_SE_Hyper_SPP/2019-11-05 05:51_Fold4_Epoach150_reset2_val0.823'
+        './Saves/UNetResNet34_PAN_Hyper_attention/2019-11-05 05:51_Fold4_Epoach150_reset2_val0.823'
     ]    # 2018-09-21 18:24_Fold1_Epoach66_reset0_val0.862
 
 
     ################################################
     # df = average_fold_predictions(SUB_PATHS)
     df = load_net_and_predict(net, TEST_PATH, LOAD_PATHS,
-                              # tta_transform=tta_transform,
+                              tta_transform=tta_transform,
                               batch_size=BATCH_SIZE,
                               threshold=THRESHOLD,
                               min_size=MIN_SIZE)
