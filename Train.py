@@ -23,7 +23,7 @@ LOSS = 'lovasz'
 OPTIMIZER = 'SGD'    # Stochastic Gradient Descent, 随机梯度下降
 PRETRAINED = True
 N_EPOCH = 150
-BATCH_SIZE = 32  #32
+BATCH_SIZE = 24  #32
 NET = UNetResNet34_PAN_Hyper_attention    # UNetResNet34_SE_Hyper_SPP
 ACTIVATION = 'relu'
 ###########OPTIMIZER###########

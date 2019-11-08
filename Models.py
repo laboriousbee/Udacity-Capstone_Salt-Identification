@@ -236,7 +236,8 @@ class GAUModule(nn.Module):
     # y: high level feature
     def forward(self, y, x):
         h, w = x.size(2), x.size(3)
-        y_up = nn.interpolate(size=(h, w), mode='bilinear', align_corners=True)(y)
+        # y_up = nn.interpolate(size=(h, w), mode='bilinear', align_corners=True)(y)
+        y_up = F.interpolate(y, size=(h, w), mode='bilinear', align_corners=True)
         x = self.conv2(x)
         y = self.conv1(y)
         z = torch.mul(x, y)
@@ -285,7 +286,8 @@ class FPAModule(nn.Module):
         b1 = self.branch1(x)
         # b1 = self.scSE(b1)
 
-        b1 = nn.interpolate(size=(h, w), mode='bilinear', align_corners=True)(b1)
+        # b1 = F.interpolate(size=(h, w), mode='bilinear', align_corners=True)(b1)  # nn.Upsample
+        b1 = F.interpolate(b1, size=(h, w), mode='bilinear', align_corners=True)
 
         mid = self.mid(x)
         # mid = self.scSE(mid)
@@ -294,17 +296,20 @@ class FPAModule(nn.Module):
         x2 = self.down2(x1)
         x3 = self.down3(x2)
         # x3 = self.scSE(x3)
-        x3 = nn.interpolate(size=(h // 4, w // 4), mode='bilinear', align_corners=True)(x3)
+        # x3 = F.interpolate(size=(h // 4, w // 4), mode='bilinear', align_corners=True)(x3)
+        x3 = F.interpolate(x3, size=(h // 4, w // 4), mode='bilinear', align_corners=True)
 
         x2 = self.conv2(x2)
         # x2 = self.scSE(x2)
         x = x2 + x3
-        x = nn.interpolate(size=(h // 2, w // 2), mode='bilinear', align_corners=True)(x)
+        # x = F.interpolate(size=(h // 2, w // 2), mode='bilinear', align_corners=True)(x)
+        x = F.interpolate(x, size=(h // 2, w // 2), mode='bilinear', align_corners=True)
 
         x1 = self.conv1(x1)
         # x1 = self.scSE(x1)
         x = x + x1
-        x = nn.interpolate(size=(h, w), mode='bilinear', align_corners=True)(x)
+        # x = F.interpolate(size=(h, w), mode='bilinear', align_corners=True)(x)
+        x = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
 
         x = torch.mul(x, mid)
         x = x + b1
