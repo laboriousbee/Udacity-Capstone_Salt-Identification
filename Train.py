@@ -1,5 +1,5 @@
 from Dataset import TGS_Dataset
-from Models import UNetResNet34_SE_Hyper_FPA, UNetResNet34_PAN_Hyper_attention
+from Models import UNetResNet34_SE_Hyper_FPA, UNetResNet34_PAN_Hyper_attention, UNetResNet34_SE_Hyper_SPP
 # UNetResNet34, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE, UNetResNet34_SE_Hyper_SPP, UNetResNet50_SE, FPNetResNet34, RefineNetResNet34
 from contextlib import contextmanager
 import time
@@ -23,8 +23,8 @@ LOSS = 'lovasz'
 OPTIMIZER = 'SGD'    # Stochastic Gradient Descent, 随机梯度下降
 PRETRAINED = True
 N_EPOCH = 150
-BATCH_SIZE = 24  #32
-NET = UNetResNet34_PAN_Hyper_attention    # UNetResNet34_SE_Hyper_SPP
+BATCH_SIZE = 8  #32
+NET = UNetResNet34_SE_Hyper_FPA  # UNetResNet34_PAN_Hyper_attention    # UNetResNet34_SE_Hyper_SPP
 ACTIVATION = 'relu'
 ###########OPTIMIZER###########
 LR = 1e-2
@@ -50,15 +50,15 @@ for i, (train_loader, val_loader) in enumerate(loaders, 1):
             continue
         net = NET(lr=LR, debug=DEBUG, pretrained=PRETRAINED, fold=i, activation=ACTIVATION, comment=COMMENT)
         net.define_criterion(LOSS)
-        net.create_optmizer(optimizer=OPTIMIZER, use_scheduler=USE_SCHEDULER, milestones=MILESTONES,
-                            gamma=GAMMA, patience=PATIENCE, T_max=T_MAX, T_mul=T_MUL, lr_min=LR_MIN)
-
-        if LOAD_PATHS is not None:
-            if LOAD_PATHS[i - 1] is not None:
-                net.load_model(LOAD_PATHS[i - 1])
-
-        net.train_network(train_loader, val_loader, n_epoch=N_EPOCH)
-        net.plot_training_curve(show=True)
+        # net.create_optmizer(optimizer=OPTIMIZER, use_scheduler=USE_SCHEDULER, milestones=MILESTONES,
+        #                     gamma=GAMMA, patience=PATIENCE, T_max=T_MAX, T_mul=T_MUL, lr_min=LR_MIN)
+        #
+        # if LOAD_PATHS is not None:
+        #     if LOAD_PATHS[i - 1] is not None:
+        #         net.load_model(LOAD_PATHS[i - 1])
+        #
+        # net.train_network(train_loader, val_loader, n_epoch=N_EPOCH)
+        # net.plot_training_curve(show=True)
 
 
 
