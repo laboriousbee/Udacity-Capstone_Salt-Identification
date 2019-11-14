@@ -244,7 +244,7 @@ class TGS_Dataset():
                                           num_workers=num_workers,
                                           batch_size=batch_size,
                                           pin_memory=True,
-                                          drop_last=True)    # drop_last=False
+                                          drop_last=False)    # drop_last=False
 
                 val_dataset = TorchDataset(self.df.iloc[val_ids])
                 val_loader = DataLoader(val_dataset,
@@ -252,7 +252,7 @@ class TGS_Dataset():
                                         num_workers=num_workers,
                                         batch_size=batch_size,
                                         pin_memory=True,
-                                        drop_last=True)
+                                        drop_last=False)
                 ###############把5个fold的id和数据分别放在各个列表#####################
                 idx.append((self.df.id.iloc[train_ids], self.df.id.iloc[val_ids]))
                 loaders.append((train_loader, val_loader))

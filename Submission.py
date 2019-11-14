@@ -7,10 +7,10 @@ import numpy as np
 from tqdm import tqdm
 from Dataset import TGS_Dataset
 from Evaluation import do_length_decode, do_length_encode
-from Models import UNetResNet34_SE, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE_Hyper_SPP, UNetResNet34_PAN_Hyper_attention
+from Models import UNetResNet34_SE_Hyper_FPA, UNetResNet34_SE, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE_Hyper_SPP, UNetResNet34_PAN_Hyper_attention
 from Augmentation import do_horizontal_flip
 
-NET = UNetResNet34_PAN_Hyper_attention    # UNetResNet34_SE_Hyper_SPP
+NET = UNetResNet34_SE_Hyper_SPP    # UNetResNet34_SE_Hyper_SPP
 
 
 # UNTESTED, NEED TO COMPARE WITH NATIVE MEAN
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     BATCH_SIZE = 32
 
     LOAD_PATHS = [
-        './Saves/UNetResNet34_PAN_Hyper_attention/2019-11-05 05:51_Fold4_Epoach150_reset2_val0.823'
+        './Saves/UNetResNet34_SE_Hyper_SPP/2019-11-09 01:05_Fold4_Epoach1_reset0_val0.545'
     ]    # 2018-09-21 18:24_Fold1_Epoach66_reset0_val0.862
 
 
