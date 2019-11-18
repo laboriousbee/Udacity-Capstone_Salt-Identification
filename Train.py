@@ -46,8 +46,8 @@ loaders, ids = train_dataset.yield_dataloader(num_workers=11, batch_size=BATCH_S
 
 for i, (train_loader, val_loader) in enumerate(loaders, 1):
     with timer('Fold {}'.format(i)):
-        # if i < 4:
-        #     continue
+        if i < 4:
+            continue
         net = NET(lr=LR, debug=DEBUG, pretrained=PRETRAINED, fold=i, activation=ACTIVATION, comment=COMMENT)    # 初始化网络
         net.define_criterion(LOSS)
         net.create_optmizer(optimizer=OPTIMIZER, use_scheduler=USE_SCHEDULER, milestones=MILESTONES,
@@ -58,7 +58,7 @@ for i, (train_loader, val_loader) in enumerate(loaders, 1):
                 net.load_model(LOAD_PATHS[i - 1])
 
         net.train_network(train_loader, val_loader, n_epoch=N_EPOCH)
-        # net.plot_training_curve(show=True)
+        net.plot_training_curve(show=True)
 
 
 
