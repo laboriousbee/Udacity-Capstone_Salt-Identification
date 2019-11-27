@@ -131,7 +131,7 @@ class SegmentationNetwork(nn.Module):
             im = im.cuda()
             mask = mask.cuda()
             z = z.cuda()
-            logit = self.forward(im) # , z)
+            logit = self.forward(im, z)
             pred = torch.sigmoid(logit)
 
             loss = self.criterion(logit, mask)
@@ -165,7 +165,7 @@ class SegmentationNetwork(nn.Module):
             z = z.cuda()
 
             with torch.no_grad():
-                logit = self.forward(im) # , z)
+                logit = self.forward(im, z)
                 pred = torch.sigmoid(logit)
                 loss = self.criterion(logit, mask)
                 iou  = dice_accuracy(pred, mask, is_average=False)
@@ -203,7 +203,7 @@ class SegmentationNetwork(nn.Module):
 
                 # Predict original batch
                 im = im.cuda()
-                logit = self.forward(im)  #, z)
+                logit = self.forward(im, z)
                 pred = torch.sigmoid(logit)
                 pred = unpad_im(pred.cpu().numpy())
                 batch_pred.append(pred)

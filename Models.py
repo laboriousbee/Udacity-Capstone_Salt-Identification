@@ -100,8 +100,8 @@ class Decoder(nn.Module):
         if self.convT_channels:
             x = self.convT(x)
         else:
-            x = F.interpolate(x, scale_factor=2, mode='bilinear',
-                           align_corners=True)  # False   upsample
+            x = F.upsample(x, scale_factor=2, mode='bilinear',
+                           align_corners=True)  # False
         x = torch.cat([x, skip], 1)
         x = self.activation(self.conv1(x))
         x = self.activation(self.conv2(x))
@@ -126,7 +126,7 @@ class PyramidPoolingModule(nn.Module):
         for (k, s), conv in zip(self.pool_list, self.conv1):
             out = F.avg_pool2d(x, kernel_size=k, stride=s)
             out = conv(out)
-            out = F.interpolate(out, size=self.size, mode='bilinear', align_corners=True)
+            out = F.upsample(out, size=self.size, mode='bilinear', align_corners=True)
             cat.append(out)
         out = torch.cat(cat, 1)
         out = self.conv2(out)
@@ -145,7 +145,7 @@ class SppBlock(nn.Module):
         size = x.shape[2:]
         x = F.adaptive_avg_pool2d(x, output_size=(self.level, self.level))  # average pool
         x = self.convblock(x)
-        x = F.interpolate(x, size=size, mode='bilinear', align_corners=True)
+        x = F.upsample(x, size=size, mode='bilinear', align_corners=True)
         return x
 
 
@@ -175,17 +175,17 @@ class ExtractPyramidFeatures(nn.Module):
 
     def forward(self, C2, C3, C4, C5):
         P5 = self.conv1[-1](C5)
-        P5_up = F.interpolate(P5, scale_factor=2, mode='bilinear', align_corners=True)
+        P5_up = F.upsample(P5, scale_factor=2, mode='bilinear', align_corners=True)
 
         P4 = self.conv1[-2](C4)
         P4 = P4 + P5_up
         P4 = self.conv2[0](P4)
-        P4_up = F.interpolate(P4, scale_factor=2, mode='bilinear', align_corners=True)
+        P4_up = F.upsample(P4, scale_factor=2, mode='bilinear', align_corners=True)
 
         P3 = self.conv1[-3](C3)
         P3 = P3 + P4_up
         P3 = self.conv2[1](P3)
-        P3_up = F.interpolate(P3, scale_factor=2, mode='bilinear', align_corners=True)
+        P3_up = F.upsample(P3, scale_factor=2, mode='bilinear', align_corners=True)
 
         P2 = self.conv1[-4](C2)
         P2 = P2 + P3_up
@@ -236,8 +236,7 @@ class GAUModule(nn.Module):
     # y: high level feature
     def forward(self, y, x):
         h, w = x.size(2), x.size(3)
-        # y_up = nn.interpolate(size=(h, w), mode='bilinear', align_corners=True)(y)
-        y_up = F.interpolate(y, size=(h, w), mode='bilinear', align_corners=True)
+        y_up = nn.Upsample(size=(h, w), mode='bilinear', align_corners=True)(y)
         x = self.conv2(x)
         y = self.conv1(y)
         z = torch.mul(x, y)
@@ -286,8 +285,7 @@ class FPAModule(nn.Module):
         b1 = self.branch1(x)
         # b1 = self.scSE(b1)
 
-        # b1 = F.interpolate(size=(h, w), mode='bilinear', align_corners=True)(b1)  # nn.Upsample
-        b1 = F.interpolate(b1, size=(h, w), mode='bilinear', align_corners=True)
+        b1 = nn.Upsample(size=(h, w), mode='bilinear', align_corners=True)(b1)
 
         mid = self.mid(x)
         # mid = self.scSE(mid)
@@ -296,20 +294,17 @@ class FPAModule(nn.Module):
         x2 = self.down2(x1)
         x3 = self.down3(x2)
         # x3 = self.scSE(x3)
-        # x3 = F.interpolate(size=(h // 4, w // 4), mode='bilinear', align_corners=True)(x3)
-        x3 = F.interpolate(x3, size=(h // 4, w // 4), mode='bilinear', align_corners=True)
+        x3 = nn.Upsample(size=(h // 4, w // 4), mode='bilinear', align_corners=True)(x3)
 
         x2 = self.conv2(x2)
         # x2 = self.scSE(x2)
         x = x2 + x3
-        # x = F.interpolate(size=(h // 2, w // 2), mode='bilinear', align_corners=True)(x)
-        x = F.interpolate(x, size=(h // 2, w // 2), mode='bilinear', align_corners=True)
+        x = nn.Upsample(size=(h // 2, w // 2), mode='bilinear', align_corners=True)(x)
 
         x1 = self.conv1(x1)
         # x1 = self.scSE(x1)
         x = x + x1
-        # x = F.interpolate(size=(h, w), mode='bilinear', align_corners=True)(x)
-        x = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
+        x = nn.Upsample(size=(h, w), mode='bilinear', align_corners=True)(x)
 
         x = torch.mul(x, mid)
         x = x + b1
@@ -325,7 +320,7 @@ class PyramidPrediction(nn.Module):
         x = self.conv1(x)
         x = self.conv2(x)
         if upsampling:
-            x = F.interpolate(x, scale_factor=upsampling, mode='bilinear', align_corners=True)
+            x = F.upsample(x, scale_factor=upsampling, mode='bilinear', align_corners=True)
         return  x
 
 class ResidualConvUnit(nn.Module):
@@ -402,7 +397,7 @@ class MultiResolutionFusion(nn.Module):
         x = self.conv1(x)
         if skip is not None:
             skip = self.conv2(skip)
-            skip = F.interpolate(skip, scale_factor=2, mode='bilinear', align_corners=False)
+            skip = F.upsample(skip, scale_factor=2, mode='bilinear', align_corners=False)
             return x + skip
         else:
             return x
@@ -490,7 +485,7 @@ class Decoder_v2(nn.Module):
             x = self.convT(x)
             x = self.activation(x)
         else:
-            x = F.interpolate(x, scale_factor=2, mode='bilinear',
+            x = F.upsample(x, scale_factor=2, mode='bilinear',
                            align_corners=True)  # False
 
         residual = x
@@ -889,10 +884,10 @@ class UNetResNet34_SE_Hyper(SegmentationNetwork):
 
         f = torch.cat([
             d1,
-            F.interpolate(self.reducer2(d2), scale_factor=2, mode='bilinear', align_corners=False),
-            F.interpolate(self.reducer3(d3), scale_factor=4, mode='bilinear', align_corners=False),
-            F.interpolate(self.reducer4(d4), scale_factor=8, mode='bilinear', align_corners=False),
-            F.interpolate(self.reducer5(d5), scale_factor=16, mode='bilinear', align_corners=False),
+            F.upsample(self.reducer2(d2), scale_factor=2, mode='bilinear', align_corners=False),
+            F.upsample(self.reducer3(d3), scale_factor=4, mode='bilinear', align_corners=False),
+            F.upsample(self.reducer4(d4), scale_factor=8, mode='bilinear', align_corners=False),
+            F.upsample(self.reducer5(d5), scale_factor=16, mode='bilinear', align_corners=False),
         ], 1)
         f = F.dropout2d(f, p=0.20)
         logit = self.logit(f)
@@ -961,10 +956,10 @@ class UNetResNet34_SE_Hyper_v2(SegmentationNetwork):
 
         f = torch.cat([
             d1,
-            F.interpolate(d2, scale_factor=2,  mode='bilinear', align_corners=False),
-            F.interpolate(d3, scale_factor=4,  mode='bilinear', align_corners=False),
-            F.interpolate(d4, scale_factor=8,  mode='bilinear', align_corners=False),
-            F.interpolate(c,  scale_factor=16, mode='bilinear', align_corners=False)
+            F.upsample(d2, scale_factor=2,  mode='bilinear', align_corners=False),
+            F.upsample(d3, scale_factor=4,  mode='bilinear', align_corners=False),
+            F.upsample(d4, scale_factor=8,  mode='bilinear', align_corners=False),
+            F.upsample(c,  scale_factor=16, mode='bilinear', align_corners=False)
             ], 1)
         logit = self.logit(f)
         return logit
@@ -1035,10 +1030,10 @@ class UNetResNet34_SE_Hyper_SPP(SegmentationNetwork):
 
         f = torch.cat([
             d1,
-            F.interpolate(d2, scale_factor=2,  mode='bilinear', align_corners=False),
-            F.interpolate(d3, scale_factor=4,  mode='bilinear', align_corners=False),
-            F.interpolate(d4, scale_factor=8,  mode='bilinear', align_corners=False),
-            F.interpolate(c,  scale_factor=16, mode='bilinear', align_corners=False)
+            F.upsample(d2, scale_factor=2,  mode='bilinear', align_corners=False),
+            F.upsample(d3, scale_factor=4,  mode='bilinear', align_corners=False),
+            F.upsample(d4, scale_factor=8,  mode='bilinear', align_corners=False),
+            F.upsample(c,  scale_factor=16, mode='bilinear', align_corners=False)
             ], 1)
         logit = self.logit(f)
         return logit
@@ -1113,10 +1108,10 @@ class UNetResNet34_SE_Hyper_SPP_v2(SegmentationNetwork):
 
         f = torch.cat([
             d1,
-            F.interpolate(d2, scale_factor=2,  mode='bilinear', align_corners=False),
-            F.interpolate(d3, scale_factor=4,  mode='bilinear', align_corners=False),
-            F.interpolate(d4, scale_factor=8,  mode='bilinear', align_corners=False),
-            F.interpolate(p2,  scale_factor=16, mode='bilinear', align_corners=False)
+            F.upsample(d2, scale_factor=2,  mode='bilinear', align_corners=False),
+            F.upsample(d3, scale_factor=4,  mode='bilinear', align_corners=False),
+            F.upsample(d4, scale_factor=8,  mode='bilinear', align_corners=False),
+            F.upsample(p2,  scale_factor=16, mode='bilinear', align_corners=False)
             # F.upsample(c,  scale_factor=16, mode='bilinear', align_corners=False)
             ], 1)
         logit = self.logit(f)
@@ -1126,7 +1121,7 @@ class UNetResNet34_SE_Hyper_FPA(SegmentationNetwork):
     # PyTorch U-Net model using ResNet(34, 50 , 101 or 152) encoder.
 
     def __init__(self, pretrained=True, activation='relu', **kwargs):
-        super(UNetResNet34_SE_Hyper_FPA, self).__init__(**kwargs)    #uper类的作用是继承的时候，调用含super的各个的基类__init__函数，如果不使用super，就不会调用这些类的__init__函数，除非显式声明。而且使用super可以避免基类被重复调用。
+        super(UNetResNet34_SE_Hyper_FPA, self).__init__(**kwargs)
         if activation == 'relu':
             self.activation = nn.ReLU(inplace=True)
         elif activation == 'elu':
@@ -1189,10 +1184,10 @@ class UNetResNet34_SE_Hyper_FPA(SegmentationNetwork):
 
         f = torch.cat([
             d1,
-            F.interpolate(d2, scale_factor=2, mode='bilinear', align_corners=False),
-            F.interpolate(d3, scale_factor=4, mode='bilinear', align_corners=False),
-            F.interpolate(d4, scale_factor=8, mode='bilinear', align_corners=False),
-            F.interpolate(f2, scale_factor=16, mode='bilinear', align_corners=False)
+            F.upsample(d2, scale_factor=2, mode='bilinear', align_corners=False),
+            F.upsample(d3, scale_factor=4, mode='bilinear', align_corners=False),
+            F.upsample(d4, scale_factor=8, mode='bilinear', align_corners=False),
+            F.upsample(f2, scale_factor=16, mode='bilinear', align_corners=False)
         ], 1)
         logit = self.logit(f)
         return logit
@@ -1235,7 +1230,7 @@ class UNetResNet34_PAN_Hyper(SegmentationNetwork):
         self.reducer = ConvBn2d(512, 64, kernel_size=1, padding=0)
 
         # self.fpa = FPAModule(in_ch=512, out_ch=64)
-        self.sfpa = sFPAModule(in_ch=512, out_ch=64)
+        self.sfpa = SFPAModule(in_ch=512, out_ch=64)
 
         self.logit = nn.Sequential(
             ConvBn2d(64 * 5, 128, kernel_size=3, padding=1),
@@ -1271,10 +1266,10 @@ class UNetResNet34_PAN_Hyper(SegmentationNetwork):
 
         f = torch.cat([
             d1,
-            F.interpolate(d2, scale_factor=2, mode='bilinear', align_corners=False),
-            F.interpolate(d3, scale_factor=4, mode='bilinear', align_corners=False),
-            F.interpolate(d4, scale_factor=8, mode='bilinear', align_corners=False),
-            F.interpolate(f1, scale_factor=16, mode='bilinear', align_corners=False)
+            F.upsample(d2, scale_factor=2, mode='bilinear', align_corners=False),
+            F.upsample(d3, scale_factor=4, mode='bilinear', align_corners=False),
+            F.upsample(d4, scale_factor=8, mode='bilinear', align_corners=False),
+            F.upsample(f1, scale_factor=16, mode='bilinear', align_corners=False)
         ], 1)
         logit = self.logit(f)
         return logit
@@ -1356,10 +1351,10 @@ class UNetResNet34_PAN_Hyper_attention(SegmentationNetwork):
         d1 = self.decoder1(d2, x)  # 128
 
         o1 = d1
-        o2 = F.interpolate(d2, scale_factor=2, mode='bilinear', align_corners=False)
-        o3 = F.interpolate(d3, scale_factor=4, mode='bilinear', align_corners=False)
-        o4 = F.interpolate(d4, scale_factor=8, mode='bilinear', align_corners=False)
-        o5 = F.interpolate(f1, scale_factor=16, mode='bilinear', align_corners=False)
+        o2 = F.upsample(d2, scale_factor=2, mode='bilinear', align_corners=False)
+        o3 = F.upsample(d3, scale_factor=4, mode='bilinear', align_corners=False)
+        o4 = F.upsample(d4, scale_factor=8, mode='bilinear', align_corners=False)
+        o5 = F.upsample(f1, scale_factor=16, mode='bilinear', align_corners=False)
 
         batchsize, C, height, width = o1.size()
 
@@ -1657,7 +1652,7 @@ class RefineNetResNet34_SE(SegmentationNetwork):
         r0 = self.refine0(x, r1)    # 128
         logit = self.logit(r0)
 
-        # logit = F.interpolate(logit, scale_factor=2, mode='bilinear', align_corners=True)
+        # logit = F.upsample(logit, scale_factor=2, mode='bilinear', align_corners=True)
         return logit
 
 ##########################################################################

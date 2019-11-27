@@ -1,6 +1,5 @@
 from Dataset import TGS_Dataset
-from Models import UNetResNet34_SE_Hyper_FPA, UNetResNet34_PAN_Hyper_attention, UNetResNet34_SE_Hyper_SPP
-# UNetResNet34, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE, UNetResNet34_SE_Hyper_SPP, UNetResNet50_SE, FPNetResNet34, RefineNetResNet34
+from Models import UNetResNet34, UNetResNet34_SE_Hyper, UNetResNet34_SE_Hyper_v2, UNetResNet34_SE, UNetResNet34_SE_Hyper_SPP, UNetResNet50_SE, FPNetResNet34, RefineNetResNet34
 from contextlib import contextmanager
 import time
 import os
@@ -20,11 +19,11 @@ LOAD_PATHS = None
 DEBUG = False
 ##############################
 LOSS = 'lovasz'
-OPTIMIZER = 'SGD'    # Stochastic Gradient Descent, 随机梯度下降
+OPTIMIZER = 'SGD'
 PRETRAINED = True
 N_EPOCH = 150
-BATCH_SIZE = 32  #32
-NET = UNetResNet34_SE_Hyper_SPP  # UNetResNet34_PAN_Hyper_attention    # UNetResNet34_SE_Hyper_SPP
+BATCH_SIZE = 32
+NET = UNetResNet34_SE_Hyper_SPP
 ACTIVATION = 'relu'
 ###########OPTIMIZER###########
 LR = 1e-2
@@ -48,7 +47,7 @@ for i, (train_loader, val_loader) in enumerate(loaders, 1):
     with timer('Fold {}'.format(i)):
         if i < 4:
             continue
-        net = NET(lr=LR, debug=DEBUG, pretrained=PRETRAINED, fold=i, activation=ACTIVATION, comment=COMMENT)    # 初始化网络
+        net = NET(lr=LR, debug=DEBUG, pretrained=PRETRAINED, fold=i, activation=ACTIVATION, comment=COMMENT)
         net.define_criterion(LOSS)
         net.create_optmizer(optimizer=OPTIMIZER, use_scheduler=USE_SCHEDULER, milestones=MILESTONES,
                             gamma=GAMMA, patience=PATIENCE, T_max=T_MAX, T_mul=T_MUL, lr_min=LR_MIN)
